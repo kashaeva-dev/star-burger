@@ -1,12 +1,14 @@
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer, CharField
 
 from .models import Product, Order, OrderItem
 
 
 class OrderItemSerializer(ModelSerializer):
+    name = CharField(source="product.name", read_only=True)
+
     class Meta:
         model = OrderItem
-        fields = ['product', 'quantity']
+        fields = ['product', 'name', 'quantity']
 
 
 class OrderSerializer(ModelSerializer):
