@@ -154,7 +154,7 @@ class Order(models.Model):
 class OrderItem(models.Model):
     order = models.ForeignKey(
         Order,
-        related_name='order_items',
+        related_name='products',
         verbose_name='заказ',
         on_delete=models.CASCADE,
     )

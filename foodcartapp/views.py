@@ -1,30 +1,10 @@
-import ast
-import json
-
 from django.http import JsonResponse
 from django.templatetags.static import static
-from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework.serializers import ModelSerializer
-from phonenumber_field import validators
-from django.core.exceptions import ValidationError, ObjectDoesNotExist, MultipleObjectsReturned
 
 from .models import Product, Order, OrderItem
-
-
-class OrderItemSerializer(ModelSerializer):
-    class Meta:
-        model = OrderItem
-        fields = ['product', 'quantity']
-
-
-class OrderSerializer(ModelSerializer):
-    products = OrderItemSerializer(many=True, allow_empty=False)
-
-    class Meta:
-        model = Order
-        fields = '__all__'
+from .serializers import OrderSerializer, ProductSerializer
 
 
 def banners_list_api(request):
@@ -82,9 +62,7 @@ def product_list_api(request):
 def register_order(request):
     serializer = OrderSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-
     products = serializer.validated_data.get('products', [])
-
     new_order = Order.objects.create(
         firstname=serializer.validated_data['firstname'],
         lastname=serializer.validated_data['lastname'],
@@ -94,4 +72,6 @@ def register_order(request):
     order_items = [OrderItem(order=new_order, **fields) for fields in products]
     OrderItem.objects.bulk_create(order_items)
 
-    return Response(request.data)
+    serialized_new_order = OrderSerializer(new_order)
+
+    return Response(serialized_new_order.data)
