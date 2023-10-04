@@ -115,8 +115,8 @@ class OrderItemInline(admin.TabularInline):
 class OrderAdmin(admin.ModelAdmin):
     list_display = (
         'id',
-        'first_name',
-        'last_name',
+        'firstname',
+        'lastname',
         'phonenumber',
         'address',
     )

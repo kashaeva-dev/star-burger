@@ -6,10 +6,25 @@ from django.templatetags.static import static
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.serializers import ModelSerializer
 from phonenumber_field import validators
 from django.core.exceptions import ValidationError, ObjectDoesNotExist, MultipleObjectsReturned
 
 from .models import Product, Order, OrderItem
+
+
+class OrderItemSerializer(ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = ['product', 'quantity']
+
+
+class OrderSerializer(ModelSerializer):
+    products = OrderItemSerializer(many=True, allow_empty=False)
+
+    class Meta:
+        model = Order
+        fields = '__all__'
 
 
 def banners_list_api(request):
@@ -65,81 +80,18 @@ def product_list_api(request):
 
 @api_view(['POST'])
 def register_order(request):
-    order = request.data
-    errors = {
-        'product_key_error': {'products_error': 'Products key not presented, null or empty list'},
-        'product_key_not_list': {'products_error': 'Products is not list'},
-        'save_order_general_error': {'order_error': 'Unable to save order'},
-        'request_type_error': {'request_error': 'Bad request. The request must be in JSON format'},
-        'firstname_empty_field': {'firstname_error': 'The field is required'},
-        'lastname_empty_field': {'lastname_error': 'The field is required'},
-        'phonenumber_empty_field': {'phonenumber_error': 'The field is required'},
-        'address_empty_field': {'address_error': 'The field is required'},
-        'phonenumber_incorrect_field': {'phonenumber_error': 'The phonenumber is incorrect'},
-        'incorrect_product_id': {'products_error': 'Incorrect product id'},
-        'firstname_not_string': {'firstname_error': 'The field is not a valid string'},
-        'user_fields_empty': {'error': 'Firstname, lastname, phonenumber and address fields are required'}
-    }
+    serializer = OrderSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
 
-    try:
-        products = order['products']
-    except KeyError:
-        content = errors['product_key_error']
-        return Response(content, status=status.HTTP_400_BAD_REQUEST)
+    products = serializer.validated_data.get('products', [])
 
-    if not products:
-        content = errors['product_key_error']
-        return Response(content, status=status.HTTP_400_BAD_REQUEST)
-    if not isinstance(products, list):
-        content = errors['product_key_not_list']
-        return Response(content, status=status.HTTP_400_BAD_REQUEST)
-    if not isinstance(order.get('firstname'), str):
-        content = errors['firstname_not_string']
-        return Response(content, status=status.HTTP_400_BAD_REQUEST)
-    if not order.get('firstname') and not order.get('lastname')\
-        and not order.get('phonenumber') and not order.get('address'):
-        content = errors['user_fields_empty']
-        return Response(content, status=status.HTTP_400_BAD_REQUEST)
-    for field in ('firstname', 'lastname', 'phonenumber', 'address'):
-        if not order.get(field):
-            content = errors[f'{field}_empty_field']
-            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+    new_order = Order.objects.create(
+        firstname=serializer.validated_data['firstname'],
+        lastname=serializer.validated_data['lastname'],
+        phonenumber=serializer.validated_data['phonenumber'],
+        address=serializer.validated_data['address'],
+    )
+    order_items = [OrderItem(order=new_order, **fields) for fields in products]
+    OrderItem.objects.bulk_create(order_items)
 
-    for product in products:
-        try:
-            Product.objects.get(pk=product['product'])
-        except ObjectDoesNotExist:
-            content = errors['incorrect_product_id']
-            return Response(content, status=status.HTTP_400_BAD_REQUEST)
-        except MultipleObjectsReturned:
-            content = errors['incorrect_product_id']
-            return Response(content, status=status.HTTP_400_BAD_REQUEST)
-
-    try:
-        validators.validate_international_phonenumber(order['phonenumber'])
-    except ValidationError:
-        content = errors['phonenumber_incorrect_field']
-        return Response(content, status=status.HTTP_400_BAD_REQUEST)
-
-    try:
-        new_order = Order.objects.create(
-            first_name=order['firstname'],
-            last_name=order['lastname'],
-            phonenumber=order['phonenumber'],
-            address=order['address'],
-        )
-        for product in order['products']:
-            product_obj = Product.objects.get(pk=product['product'])
-            OrderItem.objects.create(
-                order=new_order,
-                product=product_obj,
-                quantity=product['quantity'],
-                )
-    except TypeError:
-        content = errors['request_type_error']
-        return Response(content, status=status.HTTP_400_BAD_REQUEST)
-    except Exception:
-        content = errors['save_order_general_error']
-        return Response(content, status=status.HTTP_400_BAD_REQUEST)
-    else:
-        return Response(order)
+    return Response(request.data)
