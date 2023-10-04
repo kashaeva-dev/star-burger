@@ -3,10 +3,28 @@ import json
 
 from django.http import JsonResponse
 from django.templatetags.static import static
+from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.serializers import ModelSerializer
+from phonenumber_field import validators
+from django.core.exceptions import ValidationError, ObjectDoesNotExist, MultipleObjectsReturned
 
 from .models import Product, Order, OrderItem
+
+
+class OrderItemSerializer(ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = ['product', 'quantity']
+
+
+class OrderSerializer(ModelSerializer):
+    products = OrderItemSerializer(many=True, allow_empty=False)
+
+    class Meta:
+        model = Order
+        fields = '__all__'
 
 
 def banners_list_api(request):
@@ -62,19 +80,18 @@ def product_list_api(request):
 
 @api_view(['POST'])
 def register_order(request):
-    order = ast.literal_eval((request.data))
-    print(type(order))
+    serializer = OrderSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    products = serializer.validated_data.get('products', [])
+
     new_order = Order.objects.create(
-        first_name=order['firstname'],
-        last_name=order['lastname'],
-        phonenumber=order['phonenumber'],
-        address=order['address'],
+        firstname=serializer.validated_data['firstname'],
+        lastname=serializer.validated_data['lastname'],
+        phonenumber=serializer.validated_data['phonenumber'],
+        address=serializer.validated_data['address'],
     )
-    for product in order['products']:
-        product_obj = Product.objects.get(pk=product['product'])
-        OrderItem.objects.create(
-            order=new_order,
-            product=product_obj,
-            quantity=product['quantity'],
-        )
-    return Response(order)
+    order_items = [OrderItem(order=new_order, **fields) for fields in products]
+    OrderItem.objects.bulk_create(order_items)
+
+    return Response(request.data)
