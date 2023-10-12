@@ -1,4 +1,5 @@
 from django import forms
+from django.db.models import Prefetch
 from django.shortcuts import redirect, render
 from django.views import View
 from django.urls import reverse_lazy
@@ -8,7 +9,8 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
 
 
-from foodcartapp.models import Product, Restaurant
+from foodcartapp.models import Product, Restaurant, Order, OrderItem
+from foodcartapp.serializers import OrderSerializer
 
 
 class Login(forms.Form):
@@ -92,6 +94,11 @@ def view_restaurants(request):
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
+    orders = OrderSerializer(Order.objects.prefetch_related(
+        Prefetch(
+            'products',
+            queryset=OrderItem.objects.select_related('product'),
+        )).all(), many=True)
     return render(request, template_name='order_items.html', context={
-        # TODO заглушка для нереализованного функционала
+        'order_items': orders.data,
     })
