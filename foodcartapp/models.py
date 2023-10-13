@@ -169,9 +169,20 @@ class Order(models.Model):
         verbose_name='комментарий к заказу',
         blank=True,
     )
-    create_at = models.DateTimeField(
+    registered_at = models.DateTimeField(
         verbose_name='дата создания',
-        auto_now_add=True
+        auto_now_add=True,
+        db_index=True,
+    )
+    called_at = models.DateTimeField(
+        verbose_name='дата звонка',
+        null=True,
+        blank=True,
+    )
+    delivered_at = models.DateTimeField(
+        verbose_name='дата доставки',
+        null=True,
+        blank=True,
     )
 
     class Meta:
@@ -179,7 +190,7 @@ class Order(models.Model):
         verbose_name_plural = 'заказы'
 
     def __str__(self):
-        return f"{self.pk}: {self.create_at} - {self.address}"
+        return f"{self.pk}: {self.registered_at.strftime('%d.%m.%Y')} - {self.address}"
 
     objects = OrderQuerySet.as_manager()
 
