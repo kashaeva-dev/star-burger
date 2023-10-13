@@ -144,6 +144,10 @@ class Order(models.Model):
         ('delivery', 'Доставляется'),
         ('closed', 'Завершен'),
     ]
+    PAYMENT_METHODS = [
+        ('cash', 'Наличными (при получении)'),
+        ('card', 'Картой (при оформлении)'),
+    ]
     firstname = models.CharField(
         max_length=40,
         verbose_name='имя',
@@ -183,6 +187,14 @@ class Order(models.Model):
         verbose_name='дата доставки',
         null=True,
         blank=True,
+    )
+    payment_method = models.CharField(
+        verbose_name='способ оплаты',
+        max_length=15,
+        choices=PAYMENT_METHODS,
+        default='cash',
+        db_index=True,
+        null=False,
     )
 
     class Meta:
