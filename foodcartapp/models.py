@@ -165,6 +165,10 @@ class Order(models.Model):
         db_index=True,
         null=False,
     )
+    comment = models.TextField(
+        verbose_name='комментарий к заказу',
+        blank=True,
+    )
     create_at = models.DateTimeField(
         verbose_name='дата создания',
         auto_now_add=True
