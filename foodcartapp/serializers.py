@@ -14,6 +14,7 @@ class OrderItemSerializer(ModelSerializer):
 class OrderSerializer(ModelSerializer):
     products = OrderItemSerializer(many=True, allow_empty=False)
     total_cost = IntegerField(read_only=True)
+    status_full = CharField(source='get_status_display', read_only=True)
 
     class Meta:
         model = Order

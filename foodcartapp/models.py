@@ -138,6 +138,12 @@ class OrderQuerySet(models.QuerySet):
 
 
 class Order(models.Model):
+    STATUSES = [
+        ('new', 'Необработанный'),
+        ('cooking', 'Готовится'),
+        ('delivery', 'Доставляется'),
+        ('closed', 'Завершен'),
+    ]
     firstname = models.CharField(
         max_length=40,
         verbose_name='имя',
@@ -149,6 +155,15 @@ class Order(models.Model):
     phonenumber = PhoneNumberField(blank=False)
     address = models.TextField(
         verbose_name='адрес доставки',
+        default=True,
+    )
+    status = models.CharField(
+        verbose_name='статус',
+        max_length=15,
+        choices=STATUSES,
+        default='new',
+        db_index=True,
+        null=False,
     )
     create_at = models.DateTimeField(
         verbose_name='дата создания',
