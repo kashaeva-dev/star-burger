@@ -95,6 +95,9 @@ def view_restaurants(request):
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
     orders = OrderSerializer(Order.objects.orders_with_total_cost_and_prefetched_products(), many=True)
+    current_url = request.path
+    print(request.path)
     return render(request, template_name='order_items.html', context={
         'order_items': orders.data,
+        'current_url': current_url,
     })
