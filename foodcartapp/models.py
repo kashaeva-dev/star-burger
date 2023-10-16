@@ -139,15 +139,11 @@ class OrderQuerySet(models.QuerySet):
 
 
 class Order(models.Model):
-    NEW = 1
-    COOKING = 2
-    DELIVERY = 3
-    CLOSED = 4
     STATUSES = [
-        ('NEW', 'Необработанный'),
-        ('COOKING', 'Готовится'),
-        ('DELIVERY', 'Доставляется'),
-        ('CLOSED', 'Завершен'),
+        ('1_NEW', 'Необработанный'),
+        ('2_COOKING', 'Готовится'),
+        ('3_DELIVERY', 'Доставляется'),
+        ('4_CLOSED', 'Завершен'),
     ]
     PAYMENT_METHODS = [
         ('cash', 'Наличными (при получении)'),
@@ -170,7 +166,7 @@ class Order(models.Model):
         verbose_name='статус',
         max_length=15,
         choices=STATUSES,
-        default='NEW',
+        default='1_NEW',
         db_index=True,
         null=False,
     )

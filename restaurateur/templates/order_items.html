@@ -38,7 +38,11 @@
         <td>{{ item.address }}</td>
         <td>{{ item.comment }}</td>
         {% if item.restaurant %}
-          <td>{{ item.restaurant_info.name }}</td>
+          {% if item.status == 'COOKING' %}
+            <td>Готовит {{ item.restaurant_info.name }}</td>
+          {% else %}
+            <td></td>
+          {% endif %}
         {% else %}
         <td>
           <details>
