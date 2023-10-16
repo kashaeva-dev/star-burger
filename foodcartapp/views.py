@@ -71,7 +71,10 @@ def register_order(request):
             phonenumber=serializer.validated_data['phonenumber'],
             address=serializer.validated_data['address'],
         )
+        necessary_products = [product['product'] for product in products]
         order_items = [OrderItem(order=new_order, **fields) for fields in products]
+        for index, order_item in enumerate(order_items):
+            order_item.price = necessary_products[index].price
         OrderItem.objects.bulk_create(order_items)
 
     serialized_new_order = OrderSerializer(new_order)

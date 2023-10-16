@@ -10,6 +10,19 @@ from .models import Product, Order, OrderItem
 from .models import ProductCategory
 from .models import Restaurant
 from .models import RestaurantMenuItem
+from django import forms
+
+
+def get_available_restaurants(order):
+    available_restaurants = []
+    for order_item in order.products.all():
+        restaurant_list = RestaurantMenuItem.objects.filter(
+            product__pk=order_item.product.pk,
+            availability=True,
+        ).values_list('restaurant', flat=True)
+        available_restaurants.append(restaurant_list)
+    available_restaurants = list(set.intersection(*map(set, available_restaurants)))
+    return Restaurant.objects.filter(id__in=available_restaurants)
 
 
 class RestaurantMenuItemInline(admin.TabularInline):
@@ -123,15 +136,32 @@ class OrderItemInline(admin.TabularInline):
             instance.save()
         formset.save_m2m()
 
+class OrderAdminForm(forms.ModelForm):
+    class Meta:
+        model = Order
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super(OrderAdminForm, self).__init__(*args, **kwargs)
+        if self.instance:
+            self.fields['restaurant'].queryset = get_available_restaurants(self.instance)
+
+
+# @admin.register(Order)
+# class OrderAdmin(admin.ModelAdmin):
+#     form = OrderAdminForm
+
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
+    form = OrderAdminForm
     list_display = (
         'id',
         'firstname',
         'lastname',
         'phonenumber',
         'address',
+        'status',
     )
     inlines = (
         OrderItemInline,
@@ -144,3 +174,9 @@ class OrderAdmin(admin.ModelAdmin):
                 return HttpResponseRedirect(request.GET['next'])
         else:
             return res
+
+    def save_model(self, request, obj, form, change):
+        if obj.restaurant:
+            if obj.status == 'NEW':
+                obj.status = 'COOKING'
+        super().save_model(request, obj, form, change)
