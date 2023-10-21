@@ -44,22 +44,22 @@
             <td></td>
           {% endif %}
         {% else %}
-        <td>
-          <details>
-            <summary>
-              <i class="fa fa-caret-right fa-lg"></i> Показать
-            </summary>
-              <ul>
-                {% for restaurant in item.available_restaurants %}
-                {% if restaurant.distance != 9999 %}
-                <li>{{ restaurant.name }} - {{ restaurant.distance|floatformat:1 }} км.</li>
-                {% else %}
-                <li>{{ restaurant.name }} - <span class="error">ошибка определения координат!</span></li>
-                {% endif %}
-                {% endfor %}
-              </ul>
-          </details>
-        </td>
+          <td>
+            <details>
+              <summary>
+                <i class="fa fa-caret-right fa-lg"></i> Показать
+              </summary>
+                <ul>
+                  {% for restaurant in item.available_restaurants %}
+                    {% if restaurant.distance != 9999 %}
+                      <li>{{ restaurant.name }} - {{ restaurant.distance|floatformat:1 }} км.</li>
+                    {% else %}
+                      <li>{{ restaurant.name }} - <span class="error">ошибка определения координат!</span></li>
+                    {% endif %}
+                  {% endfor %}
+                </ul>
+            </details>
+          </td>
         {% endif %}
         <td><a href='{% url "admin:foodcartapp_order_change" object_id=item.id %}?next={{ current_url|urlencode }}'>Редактировать</a></td>
       </tr>
