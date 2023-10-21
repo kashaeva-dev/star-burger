@@ -1,9 +1,9 @@
-import json
-
-from django.db import models
 from django.core.validators import MinValueValidator
-from django.db.models import QuerySet, Prefetch, Sum, Count, F, Subquery, OuterRef
+from django.db import models
+from django.db.models import Prefetch, Sum, Count, F, Subquery, OuterRef
 from phonenumber_field.modelfields import PhoneNumberField
+
+from mapapp.models import Address
 
 
 class Restaurant(models.Model):
@@ -28,6 +28,11 @@ class Restaurant(models.Model):
 
     def __str__(self):
         return self.name
+
+    def get_restaurant_coords(self):
+        address_obj = Address.objects.filter(address=self.address).first()
+
+        return address_obj
 
 
 class ProductQuerySet(models.QuerySet):
@@ -129,13 +134,19 @@ class RestaurantMenuItem(models.Model):
 
 class OrderQuerySet(models.QuerySet):
     def orders_with_total_cost_and_prefetched_products(self):
-        return self.prefetch_related(
+        return self.select_related('restaurant').prefetch_related(
             Prefetch(
                 'products',
                 queryset=OrderItem.objects.select_related('product'),
             )).annotate(
             total_cost=Sum(F('products__price') * F('products__quantity'))
-            ).all()
+            ).annotate(
+            address_lon=Subquery(
+                    Address.objects.filter(address=OuterRef('address')).values('lon')[:1]
+            )).annotate(
+            address_lat=Subquery(
+                    Address.objects.filter(address=OuterRef('address')).values('lat')[:1]
+            )).all()
 
 
 class Order(models.Model):
@@ -213,17 +224,46 @@ class Order(models.Model):
     def __str__(self):
         return f"{self.pk}: {self.registered_at.strftime('%d.%m.%Y')} - {self.address}"
 
-    def get_available_restaurants(self):
-        available_restaurants = Restaurant.objects.filter(
-            menu_items__product__in=self.products.all().values_list('product', flat=True),
-            menu_items__availability=True,
-        ).annotate(
-            num_order_items=Count('menu_items__product')
-        ).filter(
-            num_order_items=len(self.products.all())
-        ).distinct()
+    def get_available_restaurants(self, list_for='view'):
+        if list_for == 'view':
+            if not self.restaurant:
+                available_restaurants = Restaurant.objects.filter(
+                    menu_items__product__in=self.products.all().values_list('product', flat=True),
+                    menu_items__availability=True,
+                ).annotate(
+                    num_order_items=Count('menu_items__product')
+                ).filter(
+                    num_order_items=len(self.products.all())
+                ).distinct(
 
-        return available_restaurants
+                ).annotate(
+                    address_lon=Subquery(
+                        Address.objects.filter(address=OuterRef('address')).values('lon')[:1]
+                    )
+                ).annotate(
+                    address_lat=Subquery(
+                        Address.objects.filter(address=OuterRef('address')).values('lat')[:1]
+                    )
+                )
+
+                return available_restaurants
+        elif list_for == 'admin':
+            available_restaurants = Restaurant.objects.filter(
+                menu_items__product__in=self.products.all().values_list('product', flat=True),
+                menu_items__availability=True,
+            ).annotate(
+                num_order_items=Count('menu_items__product')
+            ).filter(
+                num_order_items=len(self.products.all())
+            ).distinct()
+
+            return available_restaurants
+
+    def get_new_order_coords(self):
+        if self.status == '1_NEW':
+            address_obj = Address.objects.filter(address=self.address).first()
+
+            return address_obj
 
     objects = OrderQuerySet.as_manager()
 

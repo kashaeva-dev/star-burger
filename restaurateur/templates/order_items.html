@@ -38,7 +38,7 @@
         <td>{{ item.address }}</td>
         <td>{{ item.comment }}</td>
         {% if item.restaurant %}
-          {% if item.status == 'COOKING' %}
+          {% if item.status == '2_COOKING' %}
             <td>Готовит {{ item.restaurant_info.name }}</td>
           {% else %}
             <td></td>
@@ -51,7 +51,11 @@
             </summary>
               <ul>
                 {% for restaurant in item.available_restaurants %}
-                <li>{{ restaurant.name }}</li>
+                {% if restaurant.distance != 9999 %}
+                <li>{{ restaurant.name }} - {{ restaurant.distance|floatformat:1 }} км.</li>
+                {% else %}
+                <li>{{ restaurant.name }} - <span class="error">ошибка определения координат!</span></li>
+                {% endif %}
                 {% endfor %}
               </ul>
           </details>

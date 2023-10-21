@@ -1,5 +1,6 @@
-from rest_framework.serializers import ModelSerializer, CharField, IntegerField
+from rest_framework.serializers import ModelSerializer, CharField, IntegerField, FloatField
 
+from mapapp.serializers import AddressSerializer
 from .models import Product, Order, OrderItem, Restaurant
 
 
@@ -10,8 +11,18 @@ class OrderItemSerializer(ModelSerializer):
         model = OrderItem
         fields = ['product', 'name', 'quantity']
 
+class RestaurantCoordsSerializer(ModelSerializer):
+    address_obj = AddressSerializer(source='get_restaurant_coords', read_only=True)
+
+    class Meta:
+        model = Restaurant
+        fields = '__all__'
+
 
 class RestaurantSerializer(ModelSerializer):
+    address_lat = FloatField(read_only=True)
+    address_lon = FloatField(read_only=True)
+
     class Meta:
         model = Restaurant
         fields = '__all__'
@@ -24,6 +35,9 @@ class OrderSerializer(ModelSerializer):
     payment_method_full = CharField(source='get_payment_method_display', read_only=True)
     available_restaurants = RestaurantSerializer(source='get_available_restaurants', many=True, read_only=True)
     restaurant_info = RestaurantSerializer(source='restaurant', read_only=True)
+    # address_obj = AddressSerializer(source='get_new_order_coords', read_only=True)
+    address_lat = FloatField(read_only=True)
+    address_lon = FloatField(read_only=True)
 
     class Meta:
         model = Order

@@ -1,3 +1,7 @@
+import requests
+import logging
+from django import forms
+from django.conf import settings
 from django.contrib import admin
 from django.http import HttpResponseRedirect
 from django.shortcuts import reverse
@@ -5,24 +9,21 @@ from django.templatetags.static import static
 from django.utils.html import format_html
 from django.utils.http import url_has_allowed_host_and_scheme
 
+from geo import fetch_coordinates
+from mapapp.models import Address
 from star_burger.settings import ALLOWED_HOSTS
 from .models import Product, Order, OrderItem
 from .models import ProductCategory
 from .models import Restaurant
 from .models import RestaurantMenuItem
-from django import forms
 
 
-def get_available_restaurants(order):
-    available_restaurants = []
-    for order_item in order.products.all():
-        restaurant_list = RestaurantMenuItem.objects.filter(
-            product__pk=order_item.product.pk,
-            availability=True,
-        ).values_list('restaurant', flat=True)
-        available_restaurants.append(restaurant_list)
-    available_restaurants = list(set.intersection(*map(set, available_restaurants)))
-    return Restaurant.objects.filter(id__in=available_restaurants)
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s',
+    level=logging.INFO,
+)
+
+logger = logging.getLogger(__name__)
 
 
 class RestaurantMenuItemInline(admin.TabularInline):
@@ -45,6 +46,22 @@ class RestaurantAdmin(admin.ModelAdmin):
     inlines = [
         RestaurantMenuItemInline
     ]
+
+    def save_model(self, request, obj, form, change):
+        apikey = settings.YANDEX_APIKEY
+        if not Address.objects.filter(address=obj.address).exists():
+            new_address = Address.objects.create(address=obj.address)
+            try:
+                coords = fetch_coordinates(apikey, obj.address)
+                if coords is not None:
+                    new_address.lon = coords[0]
+                    new_address.lat = coords[1]
+                    new_address.save()
+            except requests.exceptions.HTTPError:
+                logger.info(f'Плохой запрос:{obj.address}')
+        else:
+            pass
+        super(RestaurantAdmin, self).save_model(request, obj, form, change)
 
 
 @admin.register(Product)
@@ -144,12 +161,7 @@ class OrderAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(OrderAdminForm, self).__init__(*args, **kwargs)
         if self.instance:
-            self.fields['restaurant'].queryset = get_available_restaurants(self.instance)
-
-
-# @admin.register(Order)
-# class OrderAdmin(admin.ModelAdmin):
-#     form = OrderAdminForm
+            self.fields['restaurant'].queryset = self.instance.get_available_restaurants(list_for='admin')
 
 
 @admin.register(Order)
@@ -179,4 +191,18 @@ class OrderAdmin(admin.ModelAdmin):
         if obj.restaurant:
             if obj.status == 'NEW':
                 obj.status = 'COOKING'
+
+        apikey = settings.YANDEX_APIKEY
+        if not Address.objects.filter(address=obj.address).exists():
+            new_address = Address.objects.create(address=obj.address)
+            try:
+                coords = fetch_coordinates(apikey, obj.address)
+                if coords is not None:
+                    new_address.lon = coords[0]
+                    new_address.lat = coords[1]
+                    new_address.save()
+            except requests.exceptions.HTTPError:
+                logger.info(f'Плохой запрос:{obj.address}')
+        else:
+            pass
         super().save_model(request, obj, form, change)
