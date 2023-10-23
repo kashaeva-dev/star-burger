@@ -146,7 +146,7 @@ class OrderQuerySet(models.QuerySet):
             )).annotate(
             address_lat=Subquery(
                     Address.objects.filter(address=OuterRef('address')).values('lat')[:1]
-            )).all()
+            ))
 
 
 class Order(models.Model):
@@ -228,7 +228,7 @@ class Order(models.Model):
         if list_for == 'view':
             if not self.restaurant:
                 available_restaurants = Restaurant.objects.filter(
-                    menu_items__product__in=self.products.all().values_list('product', flat=True),
+                    menu_items__product__in=self.products.values_list('product', flat=True),
                     menu_items__availability=True,
                 ).annotate(
                     num_order_items=Count('menu_items__product')
@@ -249,7 +249,7 @@ class Order(models.Model):
                 return available_restaurants
         elif list_for == 'admin':
             available_restaurants = Restaurant.objects.filter(
-                menu_items__product__in=self.products.all().values_list('product', flat=True),
+                menu_items__product__in=self.products.values_list('product', flat=True),
                 menu_items__availability=True,
             ).annotate(
                 num_order_items=Count('menu_items__product')
