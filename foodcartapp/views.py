@@ -1,17 +1,17 @@
-import requests
 import logging
+
+import requests
+from django.conf import settings
 from django.db import transaction
 from django.http import JsonResponse
 from django.templatetags.static import static
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from django.conf import settings
 
 from geo import fetch_coordinates
 from mapapp.models import Address
 from .models import Product, Order, OrderItem
-from .serializers import OrderSerializer, ProductSerializer
-
+from .serializers import OrderSerializer
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s',

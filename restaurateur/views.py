@@ -8,7 +8,7 @@ from django.views import View
 from geopy import distance
 
 from foodcartapp.models import Product, Restaurant, Order
-from foodcartapp.serializers import OrderSerializer
+from foodcartapp.serializers import OrderViewSerializer
 
 
 class Login(forms.Form):
@@ -92,7 +92,7 @@ def view_restaurants(request):
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
-    orders = OrderSerializer(
+    orders = OrderViewSerializer(
         Order.objects.orders_with_total_cost_and_prefetched_products()
         .exclude(status='CLOSED').order_by('status'),
         many=True

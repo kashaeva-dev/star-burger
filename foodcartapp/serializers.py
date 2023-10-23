@@ -1,7 +1,7 @@
 from rest_framework.serializers import ModelSerializer, CharField, IntegerField, FloatField
 
 from mapapp.serializers import AddressSerializer
-from .models import Product, Order, OrderItem, Restaurant
+from .models import Order, OrderItem, Restaurant
 
 
 class OrderItemSerializer(ModelSerializer):
@@ -25,33 +25,56 @@ class RestaurantSerializer(ModelSerializer):
 
     class Meta:
         model = Restaurant
-        fields = '__all__'
+        fields = ['name', 'address_lat', 'address_lon']
 
 
 class OrderSerializer(ModelSerializer):
     products = OrderItemSerializer(many=True, allow_empty=False)
     total_cost = IntegerField(read_only=True)
+
+    class Meta:
+        model = Order
+        fields = [
+            'id',
+            'firstname',
+            'lastname',
+            'phonenumber',
+            'address',
+            'products',
+            'total_cost',
+        ]
+
+
+class OrderViewSerializer(ModelSerializer):
+    total_cost = IntegerField(read_only=True)
     status_full = CharField(source='get_status_display', read_only=True)
     payment_method_full = CharField(source='get_payment_method_display', read_only=True)
     available_restaurants = RestaurantSerializer(source='get_available_restaurants', many=True, read_only=True)
     restaurant_info = RestaurantSerializer(source='restaurant', read_only=True)
-    # address_obj = AddressSerializer(source='get_new_order_coords', read_only=True)
     address_lat = FloatField(read_only=True)
     address_lon = FloatField(read_only=True)
 
     class Meta:
         model = Order
-        fields = '__all__'
+        fields = [
+            'id',
+            'firstname',
+            'lastname',
+            'phonenumber',
+            'address',
+            'status',
+            'comment',
+            'payment_method',
+            'status_full',
+            'payment_method_full',
+            'available_restaurants',
+            'restaurant_info',
+            'address_lat',
+            'address_lon',
+            'total_cost',
+        ]
         read_only_fields = (
             'status',
             'comment',
-            'create_at',
-            'called_at',
-            'delivered_at',
             'restaurant',
         )
-
-class ProductSerializer(ModelSerializer):
-    class Meta:
-        model = Product
-        fields = '__all__'
