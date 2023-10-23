@@ -1,14 +1,14 @@
 from django import forms
-from django.shortcuts import redirect, render
-from django.views import View
-from django.urls import reverse_lazy
-from django.contrib.auth.decorators import user_passes_test
-
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
+from django.contrib.auth.decorators import user_passes_test
+from django.shortcuts import redirect, render
+from django.urls import reverse_lazy
+from django.views import View
+from geopy import distance
 
-
-from foodcartapp.models import Product, Restaurant
+from foodcartapp.models import Product, Restaurant, Order
+from foodcartapp.serializers import OrderViewSerializer
 
 
 class Login(forms.Form):
@@ -16,14 +16,15 @@ class Login(forms.Form):
         label='Логин', max_length=75, required=True,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Укажите имя пользователя'
-        })
+            'placeholder': 'Укажите имя пользователя',
+        },
+        )
     )
     password = forms.CharField(
         label='Пароль', max_length=75, required=True,
         widget=forms.PasswordInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Введите пароль'
+            'placeholder': 'Введите пароль',
         })
     )
 
@@ -32,7 +33,7 @@ class LoginView(View):
     def get(self, request, *args, **kwargs):
         form = Login()
         return render(request, "login.html", context={
-            'form': form
+            'form': form,
         })
 
     def post(self, request):
@@ -92,6 +93,27 @@ def view_restaurants(request):
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
+    orders = OrderViewSerializer(
+        Order.objects.orders_with_total_cost_and_prefetched_products()
+        .exclude(status='CLOSED').order_by('status'),
+        many=True
+    )
+    for order in orders.data:
+        if order['available_restaurants']:
+            for restaurant in order['available_restaurants']:
+                order_lat = order.get('address_lat', False)
+                order_lon = order.get('address_lon', False)
+                restaurant_lat = restaurant.get('address_lat', False)
+                restaurant_lon = restaurant.get('address_lon', False)
+                if order_lat and order_lon and restaurant_lat and restaurant_lon:
+                    restaurant['distance'] = distance.distance((order_lat, order_lon),
+                                                               (restaurant_lat, restaurant_lon)).km
+                else:
+                    restaurant['distance'] = 9999
+            order['available_restaurants'] = sorted(order['available_restaurants'],
+                                                    key=lambda restaurant: restaurant['distance'])
+    current_url = request.path
     return render(request, template_name='order_items.html', context={
-        # TODO заглушка для нереализованного функционала
+        'order_items': orders.data,
+        'current_url': current_url,
     })

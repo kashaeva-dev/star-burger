@@ -1,12 +1,29 @@
+import logging
+
+import requests
+from django import forms
+from django.conf import settings
 from django.contrib import admin
+from django.http import HttpResponseRedirect
 from django.shortcuts import reverse
 from django.templatetags.static import static
 from django.utils.html import format_html
+from django.utils.http import url_has_allowed_host_and_scheme
 
+from geo import fetch_coordinates
+from mapapp.models import Address
+from star_burger.settings import ALLOWED_HOSTS
 from .models import Product, Order, OrderItem
 from .models import ProductCategory
 from .models import Restaurant
 from .models import RestaurantMenuItem
+
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s',
+    level=logging.INFO,
+)
+
+logger = logging.getLogger(__name__)
 
 
 class RestaurantMenuItemInline(admin.TabularInline):
@@ -27,8 +44,24 @@ class RestaurantAdmin(admin.ModelAdmin):
         'contact_phone',
     ]
     inlines = [
-        RestaurantMenuItemInline
+        RestaurantMenuItemInline,
     ]
+
+    def save_model(self, request, obj, form, change):
+        apikey = settings.YANDEX_APIKEY
+        if not Address.objects.filter(address=obj.address).exists():
+            new_address = Address.objects.create(address=obj.address)
+            try:
+                coords = fetch_coordinates(apikey, obj.address)
+                if coords is not None:
+                    new_address.lon = coords[0]
+                    new_address.lat = coords[1]
+                    new_address.save()
+            except requests.exceptions.HTTPError:
+                logger.info(f'Плохой запрос:{obj.address}')
+        else:
+            pass
+        super(RestaurantAdmin, self).save_model(request, obj, form, change)
 
 
 @admin.register(Product)
@@ -53,7 +86,7 @@ class ProductAdmin(admin.ModelAdmin):
     ]
 
     inlines = [
-        RestaurantMenuItemInline
+        RestaurantMenuItemInline,
     ]
     fieldsets = (
         ('Общее', {
@@ -63,7 +96,7 @@ class ProductAdmin(admin.ModelAdmin):
                 'image',
                 'get_image_preview',
                 'price',
-            ]
+            ],
         }),
         ('Подробно', {
             'fields': [
@@ -71,7 +104,7 @@ class ProductAdmin(admin.ModelAdmin):
                 'description',
             ],
             'classes': [
-                'wide'
+                'wide',
             ],
         }),
     )
@@ -84,7 +117,7 @@ class ProductAdmin(admin.ModelAdmin):
         css = {
             "all": (
                 static("admin/foodcartapp.css")
-            )
+            ),
         }
 
     def get_image_preview(self, obj):
@@ -110,16 +143,66 @@ class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 0
 
+    def save_formset(self, form, formset, change):
+        instances = formset.save(commit=False)
+        for obj in formset.deleted_objects:
+            obj.delete()
+        for instance in instances:
+            product = Product.objects.get(pk=instance.pk)
+            instance.price = product.price
+            instance.save()
+        formset.save_m2m()
+
+class OrderAdminForm(forms.ModelForm):
+    class Meta:
+        model = Order
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super(OrderAdminForm, self).__init__(*args, **kwargs)
+        if self.instance:
+            self.fields['restaurant'].queryset = self.instance.get_available_restaurants(list_for='admin')
+
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
+    form = OrderAdminForm
     list_display = (
         'id',
         'firstname',
         'lastname',
         'phonenumber',
         'address',
+        'status',
     )
     inlines = (
         OrderItemInline,
     )
+
+    def response_post_save_change(self, request, obj):
+        res = super().response_post_save_change(request, obj)
+        if "next" in request.GET:
+            if url_has_allowed_host_and_scheme(request.GET['next'], ALLOWED_HOSTS, require_https=False):
+                return HttpResponseRedirect(request.GET['next'])
+        else:
+            return res
+
+    def save_model(self, request, obj, form, change):
+        if obj.restaurant:
+            if obj.status == 'NEW':
+                obj.status = 'COOKING'
+
+        apikey = settings.YANDEX_APIKEY
+        if not Address.objects.filter(address=obj.address).exists():
+            new_address = Address.objects.create(address=obj.address)
+            try:
+                coords = fetch_coordinates(apikey, obj.address)
+                if coords is not None:
+                    new_address.lon = coords[0]
+                    new_address.lat = coords[1]
+                    new_address.save()
+            except requests.exceptions.HTTPError:
+                logger.info(f'Плохой запрос:{obj.address}')
+        else:
+            pass
+        super().save_model(request, obj, form, change)
