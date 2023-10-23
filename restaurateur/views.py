@@ -16,14 +16,15 @@ class Login(forms.Form):
         label='Логин', max_length=75, required=True,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Укажите имя пользователя'
-        })
+            'placeholder': 'Укажите имя пользователя',
+        },
+        )
     )
     password = forms.CharField(
         label='Пароль', max_length=75, required=True,
         widget=forms.PasswordInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Введите пароль'
+            'placeholder': 'Введите пароль',
         })
     )
 
@@ -32,7 +33,7 @@ class LoginView(View):
     def get(self, request, *args, **kwargs):
         form = Login()
         return render(request, "login.html", context={
-            'form': form
+            'form': form,
         })
 
     def post(self, request):
@@ -106,7 +107,7 @@ def view_orders(request):
                 restaurant_lon = restaurant.get('address_lon', False)
                 if order_lat and order_lon and restaurant_lat and restaurant_lon:
                     restaurant['distance'] = distance.distance((order_lat, order_lon),
-                                                           (restaurant_lat, restaurant_lon)).km
+                                                               (restaurant_lat, restaurant_lon)).km
                 else:
                     restaurant['distance'] = 9999
             order['available_restaurants'] = sorted(order['available_restaurants'],

@@ -1,7 +1,5 @@
 import requests
 from environs import Env
-from geopy import distance
-
 
 env = Env()
 env.read_env()
@@ -25,7 +23,7 @@ def fetch_coordinates(apikey, address):
     return lon, lat
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     apikey = env('YANDEX_API')
     print(apikey)
     coords = fetch_coordinates(apikey, "")

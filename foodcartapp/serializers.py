@@ -11,6 +11,7 @@ class OrderItemSerializer(ModelSerializer):
         model = OrderItem
         fields = ['product', 'name', 'quantity']
 
+
 class RestaurantCoordsSerializer(ModelSerializer):
     address_obj = AddressSerializer(source='get_restaurant_coords', read_only=True)
 

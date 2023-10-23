@@ -1,5 +1,6 @@
-import requests
 import logging
+
+import requests
 from django import forms
 from django.conf import settings
 from django.contrib import admin
@@ -16,7 +17,6 @@ from .models import Product, Order, OrderItem
 from .models import ProductCategory
 from .models import Restaurant
 from .models import RestaurantMenuItem
-
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s',
@@ -44,7 +44,7 @@ class RestaurantAdmin(admin.ModelAdmin):
         'contact_phone',
     ]
     inlines = [
-        RestaurantMenuItemInline
+        RestaurantMenuItemInline,
     ]
 
     def save_model(self, request, obj, form, change):
@@ -86,7 +86,7 @@ class ProductAdmin(admin.ModelAdmin):
     ]
 
     inlines = [
-        RestaurantMenuItemInline
+        RestaurantMenuItemInline,
     ]
     fieldsets = (
         ('Общее', {
@@ -96,7 +96,7 @@ class ProductAdmin(admin.ModelAdmin):
                 'image',
                 'get_image_preview',
                 'price',
-            ]
+            ],
         }),
         ('Подробно', {
             'fields': [
@@ -104,7 +104,7 @@ class ProductAdmin(admin.ModelAdmin):
                 'description',
             ],
             'classes': [
-                'wide'
+                'wide',
             ],
         }),
     )
@@ -117,7 +117,7 @@ class ProductAdmin(admin.ModelAdmin):
         css = {
             "all": (
                 static("admin/foodcartapp.css")
-            )
+            ),
         }
 
     def get_image_preview(self, obj):
