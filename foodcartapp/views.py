@@ -79,12 +79,7 @@ def register_order(request):
     serializer.is_valid(raise_exception=True)
     products = serializer.validated_data.get('products', [])
     with transaction.atomic():
-        new_order = Order.objects.create(
-            firstname=serializer.validated_data['firstname'],
-            lastname=serializer.validated_data['lastname'],
-            phonenumber=serializer.validated_data['phonenumber'],
-            address=serializer.validated_data['address'],
-        )
+        new_order = serializer.save()
         necessary_products = [product['product'] for product in products]
         order_items = [OrderItem(order=new_order, **fields) for fields in products]
         for index, order_item in enumerate(order_items):
