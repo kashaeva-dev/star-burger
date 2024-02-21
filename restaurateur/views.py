@@ -109,9 +109,16 @@ def view_orders(request):
                     restaurant['distance'] = distance.distance((order_lat, order_lon),
                                                                (restaurant_lat, restaurant_lon)).km
                 else:
-                    restaurant['distance'] = 9999
-            order['available_restaurants'] = sorted(order['available_restaurants'],
-                                                    key=lambda restaurant: restaurant['distance'])
+                    restaurant['distance'] = None
+            order['available_restaurants_with_distance'] = [restaurant for restaurant
+                                                            in order['available_restaurants']
+                                                            if restaurant['distance'] is not None]
+            order['available_restaurants_without_distance'] = [restaurant for restaurant
+                                                            in order['available_restaurants'] if
+                                                            restaurant['distance'] is None]
+            order['available_restaurants'] = order['available_restaurants_with_distance'] +\
+                                             order['available_restaurants_without_distance']
+
     current_url = request.path
     return render(request, template_name='order_items.html', context={
         'order_items': orders.data,

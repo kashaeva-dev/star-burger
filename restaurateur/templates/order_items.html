@@ -51,7 +51,7 @@
               </summary>
                 <ul>
                   {% for restaurant in item.available_restaurants %}
-                    {% if restaurant.distance != 9999 %}
+                    {% if restaurant.distance %}
                       <li>{{ restaurant.name }} - {{ restaurant.distance|floatformat:1 }} км.</li>
                     {% else %}
                       <li>{{ restaurant.name }} - <span class="error">ошибка определения координат!</span></li>

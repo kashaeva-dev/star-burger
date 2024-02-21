@@ -7,6 +7,7 @@ from django.contrib import admin
 from django.http import HttpResponseRedirect
 from django.shortcuts import reverse
 from django.templatetags.static import static
+from django.utils.encoding import iri_to_uri
 from django.utils.html import format_html
 from django.utils.http import url_has_allowed_host_and_scheme
 
@@ -181,11 +182,12 @@ class OrderAdmin(admin.ModelAdmin):
 
     def response_post_save_change(self, request, obj):
         res = super().response_post_save_change(request, obj)
-        if "next" in request.GET:
-            if url_has_allowed_host_and_scheme(request.GET['next'], ALLOWED_HOSTS, require_https=False):
-                return HttpResponseRedirect(request.GET['next'])
+        next_url = request.GET['next']
+        if next_url and url_has_allowed_host_and_scheme(request.GET['next'], None):
+            return HttpResponseRedirect(iri_to_uri(request.GET['next']))
         else:
             return res
+
 
     def save_model(self, request, obj, form, change):
         if obj.restaurant:
