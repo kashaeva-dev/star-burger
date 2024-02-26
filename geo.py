@@ -1,11 +1,13 @@
 import requests
 from environs import Env
+from django.conf import settings
 
 env = Env()
 env.read_env()
 
 
-def fetch_coordinates(apikey, address):
+def fetch_coordinates(address):
+    apikey = settings.YANDEX_APIKEY
     base_url = "https://geocode-maps.yandex.ru/1.x"
     response = requests.get(base_url, params={
         "geocode": address,

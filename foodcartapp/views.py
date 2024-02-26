@@ -77,27 +77,7 @@ def product_list_api(request):
 def register_order(request):
     serializer = OrderSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    products = serializer.validated_data.get('products', [])
-    with transaction.atomic():
-        new_order = serializer.save()
-        necessary_products = [product['product'] for product in products]
-        order_items = [OrderItem(order=new_order, **fields) for fields in products]
-        for index, order_item in enumerate(order_items):
-            order_item.price = necessary_products[index].price
-        OrderItem.objects.bulk_create(order_items)
-        apikey = settings.YANDEX_APIKEY
-        if not Address.objects.filter(address=new_order.address).exists():
-            new_address = Address.objects.create(address=new_order.address)
-            try:
-                coords = fetch_coordinates(apikey, new_order.address)
-                if coords is not None:
-                    new_address.lon = coords[0]
-                    new_address.lat = coords[1]
-                    new_address.save()
-            except requests.exceptions.HTTPError:
-                logger.info(f'Плохой запрос:{new_order.address}')
-        else:
-            pass
+    new_order = serializer.save()
 
     serialized_new_order = OrderSerializer(new_order)
 
