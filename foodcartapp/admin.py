@@ -190,9 +190,8 @@ class OrderAdmin(admin.ModelAdmin):
 
 
     def save_model(self, request, obj, form, change):
-        if obj.restaurant:
-            if obj.status == 'NEW':
-                obj.status = 'COOKING'
+        if obj.restaurant and obj.status == 'NEW':
+            obj.status = 'COOKING'
 
         apikey = settings.YANDEX_APIKEY
         if not Address.objects.filter(address=obj.address).exists():
