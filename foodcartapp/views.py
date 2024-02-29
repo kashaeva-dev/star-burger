@@ -75,7 +75,6 @@ def product_list_api(request):
 
 @api_view(['POST'])
 def register_order(request):
-    0 / 0
     serializer = OrderSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     new_order = serializer.save()
