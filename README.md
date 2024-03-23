@@ -166,6 +166,43 @@ Parcel будет следить за файлами в каталоге `bundle
 - `SECRET_KEY` — секретный ключ проекта. Он отвечает за шифрование на сайте. Например, им зашифрованы все пароли на вашем сайте.
 - `ALLOWED_HOSTS` — [см. документацию Django](https://docs.djangoproject.com/en/3.1/ref/settings/#allowed-hosts)
 
+## Автоматический деплой проекта на сервере
+
+После того как запущен проект на сервере, можно настроить автоматический деплой.
+
+Для этого в корневой папке пользователя нужно создать файл скрипта `deploy.sh`:
+
+```sh
+#!/bin/bash
+set -e
+
+APP_DIR=/opt/StarBurger/
+
+cd $APP_DIR
+source env/bin/activate
+git pull origin master
+pip install -r requirements.txt
+npm ci --dev
+./node_modules/.bin/parcel build bundles-src/index.js --dist-dir bundles --public-url="./"
+python manage.py makemigrations --noinput
+python manage.py migrate --noinput
+python manage.py collectstatic --noinput
+sudo systemctl restart star_burger.service
+echo "Деплой завершен"
+```
+
+Сделать скрипт исполняемым:
+
+```sh
+chmod ugo+x deploy.sh
+```
+
+Выполнить скрипт при каждом обновлении проекта:
+
+```sh
+./deploy.sh
+```
+
 ## Цели проекта
 
 Код написан в учебных целях — это урок в курсе по Python и веб-разработке на сайте [Devman](https://dvmn.org). За основу был взят код проекта [FoodCart](https://github.com/Saibharath79/FoodCart).
