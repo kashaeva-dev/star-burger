@@ -202,6 +202,29 @@ chmod ugo+x deploy.sh
 ```sh
 ./deploy.sh
 ```
+Если вы хотите, чтобы в процессе автоматического деплоя информация о деплое отправлялась в Rollbar, то
+добавьте в скрипт следующий текст:
+```sh
+json_payload=$(
+cat <<EOF
+{
+"revision": "$(git rev-parse --short HEAD)",
+"environment": "<your_environment>",
+"rollbar_username": "<your_name>",
+"comment": "$(git log -1 --pretty=format:"%s")"
+}
+EOF
+)
+curl --request POST https://api.rollbar.com/api/1/deploy \
+--header 'X-Rollbar-Access-Token: 6aaa40d079a74aa4bbc28f3e8d2e1c27' \
+--header 'Accept: application/json' \
+--header 'Content-Type: application/json' \
+--data "$json_payload"
+```
+
+## Пример работающего сайта
+
+https://kashaeva.dev/
 
 ## Цели проекта
 
