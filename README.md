@@ -184,6 +184,7 @@ APP_DIR=/opt/StarBurger/
 
 cd $APP_DIR
 source env/bin/activate
+source .env
 git pull origin master
 pip install -r requirements.txt
 npm ci --dev
@@ -213,14 +214,14 @@ json_payload=$(
 cat <<EOF
 {
 "revision": "$(git rev-parse --short HEAD)",
-"environment": "<your_environment>",
+"environment": "$(echo $ROLLBAR_ENV)",
 "rollbar_username": "<your_name>",
 "comment": "$(git log -1 --pretty=format:"%s")"
 }
 EOF
 )
 curl --request POST https://api.rollbar.com/api/1/deploy \
---header 'X-Rollbar-Access-Token: 6aaa40d079a74aa4bbc28f3e8d2e1c27' \
+--header 'X-Rollbar-Access-Token: $(echo $ROLLBAR_TOKEN)' \
 --header 'Accept: application/json' \
 --header 'Content-Type: application/json' \
 --data "$json_payload"
