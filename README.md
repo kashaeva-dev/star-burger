@@ -221,9 +221,9 @@ cat <<EOF
 EOF
 )
 curl --request POST https://api.rollbar.com/api/1/deploy \
---header 'X-Rollbar-Access-Token: $(echo $ROLLBAR_TOKEN)' \
---header 'Accept: application/json' \
---header 'Content-Type: application/json' \
+--header "X-Rollbar-Access-Token: $(echo $ROLLBAR_TOKEN)" \
+--header "Accept: application/json" \
+--header "Content-Type: application/json" \
 --data "$json_payload"
 ```
 
