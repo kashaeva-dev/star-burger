@@ -224,7 +224,7 @@ curl --request POST https://api.rollbar.com/api/1/deploy \
 
 ## Пример работающего сайта
 
-https://kashaeva.dev/
+https://starburger.dev-craft.ru/
 
 ## Цели проекта
 
